@@ -1,6 +1,8 @@
 import unittest
 
-from block_parsing import markdown_to_blocks, BlockType, block_to_block_type
+from block_parsing import markdown_to_blocks, BlockType, block_to_block_type, markdown_to_html_node, BlockType
+
+
 
 class TestMarkdownToBlocks(unittest.TestCase):
 
@@ -163,3 +165,23 @@ print("World")
     def test_mixed_content_falls_to_paragraph(self):
         block = "- List item\n\nAnother paragraph"
         self.assertEqual(block_to_block_type(block), BlockType.PARAGRAPH)
+
+class TestMarkdownToHTMLNode(unittest.TestCase):
+
+    def test_paragraphs(self):
+        md = """
+This is **bolded** paragraph
+text in a p
+tag here
+
+This is another paragraph with _italic_ text and `code` here
+"""
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        expected = (
+            "<div>"
+            "<p>This is <b>bolded</b> paragraph text in a p tag here</p>"
+            "<p>This is another paragraph with <i>italic</i> text and <code>code</code> here</p>"
+            "</div>"
+        )
+        self.assertEqual(html, expected)
