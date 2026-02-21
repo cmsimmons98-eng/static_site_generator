@@ -74,3 +74,48 @@ class LeafNode(HTMLNode):
             f"value={self.value!r}, "
             f"props={props_str})"
         )
+
+class ParentNode(HTMLNode):
+    def __init__(
+        self,
+        tag: str,
+        children: list[HTMLNode],
+        props: dict[str, str] | None = None,
+    ):
+        # Tag and children are REQUIRED — no defaults allowed
+        if tag is None:
+            raise ValueError("ParentNode must have a tag")
+        if children is None:
+            raise ValueError("ParentNode must have children (can be empty list, but not None)")
+        
+        # No value allowed on ParentNode
+        super().__init__(tag=tag, value=None, children=children, props=props)
+
+    def to_html(self) -> str:
+        if self.tag is None:
+            raise ValueError("ParentNode must have a tag")
+
+        if self.children is None:
+            raise ValueError("ParentNode must have children (cannot be None)")
+
+        # Build the opening tag + props
+        props_string = self.props_to_html() if self.props else ""
+        opening = f"<{self.tag}{props_string}>"
+
+        # Recursively render all children
+        children_html = ""
+        for child in self.children:
+            children_html += child.to_html()
+
+        closing = f"</{self.tag}>"
+
+        return opening + children_html + closing
+
+    def __repr__(self) -> str:
+        props_str = str(self.props) if self.props else "None"
+        children_count = len(self.children) if self.children else 0
+        return (
+            f"ParentNode(tag={self.tag!r}, "
+            f"children_count={children_count}, "
+            f"props={props_str})"
+        )

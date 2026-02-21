@@ -2,7 +2,7 @@ import unittest
 
 from htmlnode import HTMLNode
 from htmlnode import LeafNode
-
+from htmlnode import ParentNode
 
 class TestHTMLNode(unittest.TestCase):
     def test_props_to_html_basic(self):
@@ -70,7 +70,57 @@ class TestHTMLNode(unittest.TestCase):
         with self.assertRaises(ValueError):
             LeafNode("p", None)  # should fail immediately in __init__
 
+    # ── ParentNode tests ───────────────────────────────────────────
 
+    def test_to_html_with_children(self):
+        child_node = LeafNode("span", "child")
+        parent_node = ParentNode("div", [child_node])
+        self.assertEqual(parent_node.to_html(), "<div><span>child</span></div>")
+
+    def test_to_html_with_grandchildren(self):
+        grandchild = LeafNode("b", "grandchild")
+        child = ParentNode("span", [grandchild])
+        parent = ParentNode("div", [child])
+        expected = "<div><span><b>grandchild</b></span></div>"
+        self.assertEqual(parent.to_html(), expected)
+
+    def test_to_html_multiple_children(self):
+        node = ParentNode(
+            "p",
+            [
+                LeafNode("b", "Bold text"),
+                LeafNode(None, " normal text "),
+                LeafNode("i", "italic text"),
+                LeafNode(None, " more normal text"),
+            ]
+        )
+        expected = "<p><b>Bold text</b> normal text <i>italic text</i> more normal text</p>"
+        self.assertEqual(node.to_html(), expected)
+
+    def test_to_html_nested_parents(self):
+        inner = ParentNode("ul", [
+            LeafNode("li", "Item 1"),
+            LeafNode("li", "Item 2"),
+        ])
+        outer = ParentNode("div", [
+            LeafNode("h1", "Title"),
+            inner,
+            LeafNode("p", "Footer text")
+        ])
+        expected = (
+            "<div><h1>Title</h1>"
+            "<ul><li>Item 1</li><li>Item 2</li></ul>"
+            "<p>Footer text</p></div>"
+        )
+        self.assertEqual(outer.to_html(), expected)
+
+    def test_parent_raises_no_tag(self):
+        with self.assertRaises(ValueError):
+            ParentNode(None, [LeafNode("span", "hi")])
+
+    def test_parent_raises_no_children(self):
+        with self.assertRaises(ValueError):
+            ParentNode("div", None)  # None is not allowed (empty list [] would be ok)
 
 
 if __name__ == "__main__":
