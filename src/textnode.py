@@ -143,3 +143,84 @@ def extract_markdown_links(text: str) -> list[tuple[str, str]]:
     pattern = r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)"
     matches = re.findall(pattern, text)
     return matches
+
+def split_nodes_image(old_nodes):
+    new_nodes = []
+
+    for old_node in old_nodes:
+        # Only process TEXT nodes
+        if old_node.text_type != TextType.TEXT:
+            new_nodes.append(old_node)
+            continue
+
+        remaining_text = old_node.text
+        current_pos = 0
+
+        while True:
+            images = extract_markdown_images(remaining_text)
+            if not images:
+                # No (more) images → add whatever is left
+                if remaining_text:
+                    new_nodes.append(TextNode(remaining_text, TextType.TEXT))
+                break
+
+            # Take the first (leftmost) image
+            alt_text, url = images[0]
+
+            # The full markdown substring we want to remove
+            full_match = f"![{alt_text}]({url})"
+
+            # Find where it starts in the current remaining text
+            match_start = remaining_text.find(full_match)
+            if match_start == -1:
+                # Should not happen if extract_markdown_images is correct
+                raise ValueError("Inconsistent image extraction")
+
+            # Text before the image
+            before = remaining_text[:match_start]
+            if before:
+                new_nodes.append(TextNode(before, TextType.TEXT))
+
+            # The image node itself
+            new_nodes.append(TextNode(alt_text, TextType.IMAGE, url))
+
+            # Update remaining text (after this image)
+            remaining_text = remaining_text[match_start + len(full_match):]
+
+    return new_nodes
+
+
+def split_nodes_link(old_nodes):
+    new_nodes = []
+
+    for old_node in old_nodes:
+        if old_node.text_type != TextType.TEXT:
+            new_nodes.append(old_node)
+            continue
+
+        remaining_text = old_node.text
+
+        while True:
+            links = extract_markdown_links(remaining_text)
+            if not links:
+                if remaining_text:
+                    new_nodes.append(TextNode(remaining_text, TextType.TEXT))
+                break
+
+            anchor_text, url = links[0]
+
+            full_match = f"[{anchor_text}]({url})"
+
+            match_start = remaining_text.find(full_match)
+            if match_start == -1:
+                raise ValueError("Inconsistent link extraction")
+
+            before = remaining_text[:match_start]
+            if before:
+                new_nodes.append(TextNode(before, TextType.TEXT))
+
+            new_nodes.append(TextNode(anchor_text, TextType.LINK, url))
+
+            remaining_text = remaining_text[match_start + len(full_match):]
+
+    return new_nodes
