@@ -224,3 +224,20 @@ def split_nodes_link(old_nodes):
             remaining_text = remaining_text[match_start + len(full_match):]
 
     return new_nodes
+
+def text_to_textnodes(text: str) -> list[TextNode]:
+    nodes = [TextNode(text, TextType.TEXT)]
+    
+    nodes = split_nodes_image(nodes)
+    nodes = split_nodes_link(nodes)
+    
+    # Bold first (because ** contains *)
+    nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)
+    
+    # Now both *italic* and _italic_
+    nodes = split_nodes_delimiter(nodes, "*", TextType.ITALIC)
+    nodes = split_nodes_delimiter(nodes, "_", TextType.ITALIC)
+    
+    nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
+    
+    return nodes

@@ -1,6 +1,6 @@
 import unittest
 
-from textnode import TextNode, TextType,text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link
+from textnode import TextNode, TextType,text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes
 
 class TestTextNode(unittest.TestCase):
     def test_eq(self):
@@ -334,6 +334,70 @@ class TestSplitNodesImageAndLink(unittest.TestCase):
             TextNode(" now!", TextType.TEXT),
         ]
         self.assertEqual(after_both, expected)
+
+class TestTextToTextNodes(unittest.TestCase):
+
+    def test_full_example(self):
+        text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+    
+        nodes = text_to_textnodes(text)
+    
+        expected = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("text", TextType.BOLD),
+            TextNode(" with an ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" word and a ", TextType.TEXT),
+            TextNode("code block", TextType.CODE),
+            TextNode(" and an ", TextType.TEXT),
+            TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+            TextNode(" and a ", TextType.TEXT),
+            TextNode("link", TextType.LINK, "https://boot.dev"),
+        ]
+        
+        self.assertEqual(nodes, expected)
+
+    def test_only_plain_text(self):
+        text = "Just some normal text without anything special."
+        nodes = text_to_textnodes(text)
+        self.assertEqual(nodes, [TextNode(text, TextType.TEXT)])
+
+    def test_only_bold_and_code(self):
+        text = "Hello **world** this is `code` here"
+        nodes = text_to_textnodes(text)
+        expected = [
+            TextNode("Hello ", TextType.TEXT),
+            TextNode("world", TextType.BOLD),
+            TextNode(" this is ", TextType.TEXT),
+            TextNode("code", TextType.CODE),
+            TextNode(" here", TextType.TEXT),
+        ]
+        self.assertEqual(nodes, expected)
+
+    def test_image_at_beginning(self):
+        text = "![cat](cat.jpg) is very cute"
+        nodes = text_to_textnodes(text)
+        expected = [
+            TextNode("cat", TextType.IMAGE, "cat.jpg"),
+            TextNode(" is very cute", TextType.TEXT),
+        ]
+        self.assertEqual(nodes, expected)
+
+    def test_multiple_images_and_links(self):  # or whatever the test name is
+        text = "See ![sun](sun.jpg) and [Google](https://google.com) or ![moon](moon.jpg)"
+        
+        nodes = text_to_textnodes(text)
+        
+        expected = [
+            TextNode("See ", TextType.TEXT),
+            TextNode("sun", TextType.IMAGE, "sun.jpg"),
+            TextNode(" and ", TextType.TEXT),
+            TextNode("Google", TextType.LINK, "https://google.com"),
+            TextNode(" or ", TextType.TEXT),
+            TextNode("moon", TextType.IMAGE, "moon.jpg"),
+        ]
+        
+        self.assertEqual(nodes, expected)
 
 
 if __name__ == "__main__":
