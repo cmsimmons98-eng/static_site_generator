@@ -1,7 +1,6 @@
 import unittest
 
-from textnode import TextNode, TextType
-from textnode import text_node_to_html_node
+from textnode import TextNode, TextType,text_node_to_html_node, split_nodes_delimiter
 
 class TestTextNode(unittest.TestCase):
     def test_eq(self):
@@ -67,6 +66,68 @@ class TestTextNode(unittest.TestCase):
         invalid_node.text_type = "INVALID"  # hack for test — don't do this in real code
         with self.assertRaises(ValueError):
             text_node_to_html_node(invalid_node)
+
+class TestSplitNodesDelimiter(unittest.TestCase):
+    
+    def test_basic_bold(self):
+        node = TextNode("This is **bold** text", TextType.TEXT)
+        new_nodes = split_nodes_delimiter([node], "**", TextType.BOLD)
+        
+        expected = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("bold", TextType.BOLD),
+            TextNode(" text", TextType.TEXT),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_basic_italic(self):
+        node = TextNode("Normal *italic* normal", TextType.TEXT)
+        new_nodes = split_nodes_delimiter([node], "*", TextType.ITALIC)
+        expected = [
+            TextNode("Normal ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" normal", TextType.TEXT),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_code_inline(self):
+        node = TextNode("Here is `print('hi')` code", TextType.TEXT)
+        new_nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+        expected = [
+            TextNode("Here is ", TextType.TEXT),
+            TextNode("print('hi')", TextType.CODE),
+            TextNode(" code", TextType.TEXT),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_no_delimiter(self):
+        node = TextNode("Just plain text", TextType.TEXT)
+        new_nodes = split_nodes_delimiter([node], "**", TextType.BOLD)
+        # Should return the original node unchanged
+        self.assertEqual(new_nodes, [node])
+
+    def test_unbalanced_delimiter(self):
+        node = TextNode("This is **bold but not closed", TextType.TEXT)
+        with self.assertRaises(ValueError):
+            split_nodes_delimiter([node], "**", TextType.BOLD)
+
+    def test_multiple_delimiters_same_type(self):
+        node = TextNode("One **two** three **four** end", TextType.TEXT)
+        new_nodes = split_nodes_delimiter([node], "**", TextType.BOLD)
+        expected = [
+            TextNode("One ", TextType.TEXT),
+            TextNode("two", TextType.BOLD),
+            TextNode(" three ", TextType.TEXT),
+            TextNode("four", TextType.BOLD),
+            TextNode(" end", TextType.TEXT),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_non_text_node_unchanged(self):
+        bold_node = TextNode("already bold", TextType.BOLD)
+        new_nodes = split_nodes_delimiter([bold_node], "**", TextType.BOLD)
+        self.assertEqual(new_nodes, [bold_node])
+
 
 if __name__ == "__main__":
     unittest.main()

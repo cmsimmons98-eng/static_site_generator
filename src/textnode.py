@@ -67,3 +67,58 @@ def text_node_to_html_node(text_node: TextNode) -> LeafNode:
         case _:
             # This catches any unknown TextType (future-proofing + safety)
             raise ValueError(f"Unknown TextType: {text_node.text_type}")
+
+def split_nodes_delimiter(old_nodes, delimiter, text_type):
+    """
+    Takes a list of TextNodes, finds any TEXT nodes that contain the given delimiter,
+    and splits them into separate TextNodes of the specified text_type.
+    
+    Example:
+        Input:  [TextNode("hello **world** today", TextType.TEXT)]
+        delimiter: "**"
+        text_type: TextType.BOLD
+        Output: [
+            TextNode("hello ", TextType.TEXT),
+            TextNode("world", TextType.BOLD),
+            TextNode(" today", TextType.TEXT)
+        ]
+    """
+    new_nodes = []
+    
+    for old_node in old_nodes:
+        # Only split TEXT nodes — everything else stays as-is
+        if old_node.text_type != TextType.TEXT:
+            new_nodes.append(old_node)
+            continue
+        
+        # If no delimiter at all → keep the whole node
+        if delimiter not in old_node.text:
+            new_nodes.append(old_node)
+            continue
+        
+        # We have at least one delimiter → need to split
+        parts = old_node.text.split(delimiter)
+        
+        # parts will have odd length if delimiters are balanced
+        # even length → unbalanced → invalid Markdown
+        if len(parts) % 2 == 0:
+            raise ValueError(
+                f"Invalid Markdown: unbalanced delimiter '{delimiter}' in text: "
+                f"'{old_node.text}'"
+            )
+        
+        # Now walk through the parts:
+        # even indices = normal text
+        # odd indices  = delimited (bold/italic/code/etc.)
+        for i, part in enumerate(parts):
+            if part == "":  # skip empty parts (e.g. "**" at start or double **)
+                continue
+                
+            if i % 2 == 0:
+                # normal text
+                new_nodes.append(TextNode(part, TextType.TEXT))
+            else:
+                # delimited text → new type
+                new_nodes.append(TextNode(part, text_type))
+    
+    return new_nodes
