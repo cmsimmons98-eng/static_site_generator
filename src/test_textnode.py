@@ -1,6 +1,6 @@
 import unittest
 
-from textnode import TextNode, TextType,text_node_to_html_node, split_nodes_delimiter
+from textnode import TextNode, TextType,text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links
 
 class TestTextNode(unittest.TestCase):
     def test_eq(self):
@@ -128,6 +128,56 @@ class TestSplitNodesDelimiter(unittest.TestCase):
         new_nodes = split_nodes_delimiter([bold_node], "**", TextType.BOLD)
         self.assertEqual(new_nodes, [bold_node])
 
+class TestMarkdownExtractors(unittest.TestCase):
 
+    def test_extract_images_basic(self):
+        text = "Here's a photo ![cute cat](cat.jpg) and another ![sunset](sunset.png)"
+        result = extract_markdown_images(text)
+        expected = [
+            ("cute cat", "cat.jpg"),
+            ("sunset", "sunset.png"),
+        ]
+        self.assertEqual(result, expected)
+
+    def test_extract_images_with_empty_alt(self):
+        text = "Image with no alt ![](empty.jpg)"
+        result = extract_markdown_images(text)
+        self.assertEqual(result, [("", "empty.jpg")])
+
+    def test_extract_images_none(self):
+        text = "No images here [just a link](https://example.com)"
+        self.assertEqual(extract_markdown_images(text), [])
+
+    def test_extract_links_basic(self):
+        text = "Check [boot.dev](https://www.boot.dev) and [YouTube](https://youtube.com)"
+        result = extract_markdown_links(text)
+        expected = [
+            ("boot.dev", "https://www.boot.dev"),
+            ("YouTube", "https://youtube.com"),
+        ]
+        self.assertEqual(result, expected)
+
+    def test_extract_links_does_not_catch_images(self):
+        text = "This ![image](img.jpg) should not appear as link"
+        result = extract_markdown_links(text)
+        self.assertEqual(result, [])
+
+    def test_extract_links_with_special_chars(self):
+        text = "Read [my article!](https://example.com/article?lang=en&ref=bootdev)"
+        result = extract_markdown_links(text)
+        self.assertEqual(result, [("my article!", "https://example.com/article?lang=en&ref=bootdev")])
+
+    def test_mixed_content(self):
+        text = "See ![rickroll](rick.gif) and visit [boot.dev](https://boot.dev) now!"
+        self.assertEqual(
+            extract_markdown_images(text),
+            [("rickroll", "rick.gif")]
+        )
+        self.assertEqual(
+            extract_markdown_links(text),
+            [("boot.dev", "https://boot.dev")]
+        )
+
+        
 if __name__ == "__main__":
     unittest.main()
