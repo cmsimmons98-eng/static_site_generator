@@ -54,18 +54,22 @@ class LeafNode(HTMLNode):
 
     def to_html(self) -> str:
         if self.value is None:
-            # This shouldn't happen because we checked in __init__,
-            # but good to be defensive
             raise ValueError("LeafNode must have a value")
 
         if self.tag is None:
-            # No tag → just return the raw text
             return self.value
 
-        # Has a tag → build <tag props>value</tag>
         props_string = self.props_to_html() if self.props else ""
-        return f"<{self.tag}{props_string}>{self.value}</{self.tag}>"
 
+        # Void/self-closing elements (no content allowed, no closing tag needed)
+        void_elements = {"img", "br", "hr", "input", "meta", "link", "area", "base", "col", "embed", "param", "source", "track", "wbr"}
+
+        if self.tag in void_elements:
+            return f"<{self.tag}{props_string} />"  # self-closing (with space before / for readability)
+
+        # Normal elements with content
+        return f"<{self.tag}{props_string}>{self.value}</{self.tag}>"
+        
     def __repr__(self) -> str:
         # Similar to parent, but we know children=None so we skip it
         props_str = str(self.props) if self.props else "None"

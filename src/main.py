@@ -61,9 +61,16 @@ def generate_page(from_path: str, template_path: str, dest_path: str, basepath: 
 
     # Fix absolute links and sources for GitHub Pages subdirectory
     if basepath != "/":
+        # Double-quoted paths
         full_html = full_html.replace('href="/', f'href="{basepath}')
-        full_html = full_html.replace('src="/', f'src="{basepath}')
+        full_html = full_html.replace('src="/',  f'src="{basepath}')
+        full_html = full_html.replace('action="/', f'action="{basepath}')  # forms, if any
 
+        # Single-quoted paths (some templates use them)
+        full_html = full_html.replace("href='/", f"href='{basepath}")
+        full_html = full_html.replace("src='/",  f"src='{basepath}")
+        full_html = full_html.replace("action='/", f"action='{basepath}")
+        
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     with open(dest_path, "w", encoding="utf-8") as f:
         f.write(full_html)
