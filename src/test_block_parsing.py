@@ -1,8 +1,6 @@
 import unittest
 
-from block_parsing import markdown_to_blocks, BlockType, block_to_block_type, markdown_to_html_node, BlockType
-
-
+from block_parsing import markdown_to_blocks, BlockType, block_to_block_type, markdown_to_html_node, BlockType, extract_title
 
 class TestMarkdownToBlocks(unittest.TestCase):
 
@@ -185,3 +183,50 @@ This is another paragraph with _italic_ text and `code` here
             "</div>"
         )
         self.assertEqual(html, expected)
+
+
+class TestExtractTitle(unittest.TestCase):
+
+    def test_extract_title_basic(self):
+        md = """
+# My Awesome Page
+
+Some content here
+"""
+        title = extract_title(md)
+        self.assertEqual(title, "My Awesome Page")
+
+    def test_extract_title_with_extra_spaces(self):
+        md = """
+   #    Tolkien Fan Club    
+
+Paragraph
+"""
+        title = extract_title(md)
+        self.assertEqual(title, "Tolkien Fan Club")
+
+    def test_extract_title_no_h1(self):
+        md = """
+## This is H2, not H1
+
+No title here
+"""
+        with self.assertRaises(ValueError) as cm:
+            extract_title(md)
+        self.assertEqual(str(cm.exception), "No H1 heading found in markdown document")
+
+    def test_extract_title_multiple_h1(self):
+        md = """
+# First Title
+
+Some text
+
+# Second Title (should ignore this one)
+"""
+        title = extract_title(md)
+        self.assertEqual(title, "First Title")  # only the first one counts
+
+    def test_extract_title_empty(self):
+        md = ""
+        with self.assertRaises(ValueError):
+            extract_title(md)

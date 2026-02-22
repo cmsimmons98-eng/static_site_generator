@@ -206,3 +206,20 @@ def markdown_to_html_node(markdown: str) -> ParentNode:
 
     # Wrap everything in a <div>
     return ParentNode("div", children=children)
+
+def extract_title(markdown: str) -> str:
+    """
+    Finds the first H1 heading (# Title) in the markdown and returns the title text.
+    Raises ValueError if no H1 is found.
+    """
+    lines = markdown.splitlines()
+        
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("# "):  # exactly one # followed by space
+            # Remove the # and any extra spaces
+            title = stripped[2:].strip()  # skip "# "
+            if title:  # make sure it's not just "# "
+                return title
+        
+    raise ValueError("No H1 heading found in markdown document")

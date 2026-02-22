@@ -1,7 +1,9 @@
-from textnode import TextNode, TextType, extract_markdown_images, extract_markdown_links
 
 import os 
 import shutil
+
+from textnode import TextNode, TextType, extract_markdown_images, extract_markdown_links
+from block_parsing import markdown_to_html_node, extract_title
 
 def copy_directory(src: str, dest: str) -> None:
     """
@@ -42,16 +44,51 @@ def copy_directory(src: str, dest: str) -> None:
 
 
 def main():
-   # Make sure public/ exists (or will be created)
-    public_dir = "public"
-    static_dir = "static"
-
     print("Starting SSG build...")
 
-    # Copy static assets to public/
-    copy_directory(static_dir, public_dir)
+    # Copy static assets (from previous step)
+    copy_directory("static", "public")
 
-    print("Build complete! Check the 'public' folder.")
+    # Generate the main page
+    generate_page(
+        from_path="content/index.md",
+        template_path="template.html",
+        dest_path="public/index.html"
+    )
+
+    print("Build complete! Run the server next.")
+
+def generate_page(from_path: str, template_path: str, dest_path: str) -> None:
+    """
+    Generate one HTML page from a Markdown file using a template.
+    """
+    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+
+    # Read Markdown file
+    with open(from_path, "r", encoding="utf-8") as f:
+        markdown_content = f.read()
+
+    # Read template file
+    with open(template_path, "r", encoding="utf-8") as f:
+        template = f.read()
+
+    # Convert Markdown to HTML string
+    html_node = markdown_to_html_node(markdown_content)
+    html_content = html_node.to_html()
+
+    # Get page title
+    title = extract_title(markdown_content)
+
+    # Replace placeholders
+    full_html = template.replace("{{ Title }}", title)
+    full_html = full_html.replace("{{ Content }}", html_content)
+
+    # Create directories if needed and write the file
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+    with open(dest_path, "w", encoding="utf-8") as f:
+        f.write(full_html)
+
+    print(f"Page generated: {dest_path}")
 
 if __name__ == "__main__":
     main()
