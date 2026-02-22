@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
-# Build the site (copies static + generates pages)
+# Build the site
 python3 src/main.py
 
-# Start the server in the background so the script can exit
+# Kill any old server on port 8888 (silent, ignore if none)
+fuser -k 8888/tcp 2>/dev/null || true
+
+# Start fresh server in background
 cd public && python3 -m http.server 8888 &
