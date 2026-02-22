@@ -7,4 +7,4 @@ python3 src/main.py
 fuser -k 8888/tcp 2>/dev/null || true
 
 # Start fresh server in background
-cd public && python3 -m http.server 8888 &
+cd docs && python3 -m http.server 8888 &

@@ -1,4 +1,4 @@
-
+import sys
 import os 
 import shutil
 
@@ -41,38 +41,35 @@ def copy_directory(src: str, dest: str) -> None:
 
     print(f"Finished copying {src} to {dest}")
 
-def generate_page(from_path: str, template_path: str, dest_path: str) -> None:
-    """
-    Generate one HTML page from a Markdown file using a template.
-    """
-    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+def generate_page(from_path: str, template_path: str, dest_path: str, basepath: str = "/") -> None:
+    print(f"Generating page from {from_path} to {dest_path} using {template_path} with basepath {basepath}")
 
-    # Read Markdown file
     with open(from_path, "r", encoding="utf-8") as f:
         markdown_content = f.read()
 
-    # Read template file
     with open(template_path, "r", encoding="utf-8") as f:
         template = f.read()
 
-    # Convert Markdown to HTML string
     html_node = markdown_to_html_node(markdown_content)
     html_content = html_node.to_html()
 
-    # Get page title
     title = extract_title(markdown_content)
 
     # Replace placeholders
     full_html = template.replace("{{ Title }}", title)
     full_html = full_html.replace("{{ Content }}", html_content)
 
-    # Create directories if needed and write the file
+    # Fix absolute links and sources for GitHub Pages subdirectory
+    if basepath != "/":
+        full_html = full_html.replace('href="/', f'href="{basepath}')
+        full_html = full_html.replace('src="/', f'src="{basepath}')
+
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     with open(dest_path, "w", encoding="utf-8") as f:
         f.write(full_html)
 
     print(f"Page generated: {dest_path}")
-
+    
 def generate_pages_recursive(dir_path_content: str, template_path: str, dest_dir_path: str) -> None:
     """
     Recursively find all .md files in dir_path_content and generate HTML pages in dest_dir_path.
@@ -92,7 +89,7 @@ def generate_pages_recursive(dir_path_content: str, template_path: str, dest_dir
                 # Replace .md with .html in destination
                 html_dest = dest_path[:-3] + ".html"  # remove .md, add .html
                 print(f"Generating page: {content_path} → {html_dest}")
-                generate_page(content_path, template_path, html_dest)
+                generate_page(content_path, template_path, html_dest, basepath=basepath)
             else:
                 print(f"Skipping non-markdown file: {content_path}")
 
@@ -105,14 +102,23 @@ def generate_pages_recursive(dir_path_content: str, template_path: str, dest_dir
 def main():
     print("Starting SSG build...")
 
+    # Get base path from command line (default to / for local testing)
+    if len(sys.argv) > 1:
+        basepath = sys.argv[1]
+        print(f"Using basepath from argument: {basepath}")
+    else:
+        basepath = "/"
+        print("No basepath provided — using default '/' for local testing")
+
     # Copy static assets
     copy_directory("static", "public")
 
-    # Generate ALL pages recursively from content/
+    # Generate all pages, passing the basepath
     generate_pages_recursive(
         dir_path_content="content",
         template_path="template.html",
-        dest_dir_path="public"
+        dest_dir_path="public",
+        basepath=basepath  # ← new parameter
     )
 
     print("Build complete! Run the server next.")
