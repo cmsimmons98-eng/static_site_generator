@@ -69,8 +69,8 @@ def generate_page(from_path: str, template_path: str, dest_path: str, basepath: 
         f.write(full_html)
 
     print(f"Page generated: {dest_path}")
-    
-def generate_pages_recursive(dir_path_content: str, template_path: str, dest_dir_path: str) -> None:
+
+def generate_pages_recursive(dir_path_content: str, template_path: str, dest_dir_path: str, basepath: str ="/") -> None:
     """
     Recursively find all .md files in dir_path_content and generate HTML pages in dest_dir_path.
     Preserves the folder structure.
@@ -111,13 +111,13 @@ def main():
         print("No basepath provided — using default '/' for local testing")
 
     # Copy static assets
-    copy_directory("static", "public")
+    copy_directory("static", "docs")
 
     # Generate all pages, passing the basepath
     generate_pages_recursive(
         dir_path_content="content",
         template_path="template.html",
-        dest_dir_path="public",
+        dest_dir_path="docs",
         basepath=basepath  # ← new parameter
     )
 
