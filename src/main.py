@@ -41,23 +41,6 @@ def copy_directory(src: str, dest: str) -> None:
 
     print(f"Finished copying {src} to {dest}")
 
-
-
-def main():
-    print("Starting SSG build...")
-
-    # Copy static assets (from previous step)
-    copy_directory("static", "public")
-
-    # Generate the main page
-    generate_page(
-        from_path="content/index.md",
-        template_path="template.html",
-        dest_path="public/index.html"
-    )
-
-    print("Build complete! Run the server next.")
-
 def generate_page(from_path: str, template_path: str, dest_path: str) -> None:
     """
     Generate one HTML page from a Markdown file using a template.
@@ -89,6 +72,50 @@ def generate_page(from_path: str, template_path: str, dest_path: str) -> None:
         f.write(full_html)
 
     print(f"Page generated: {dest_path}")
+
+def generate_pages_recursive(dir_path_content: str, template_path: str, dest_dir_path: str) -> None:
+    """
+    Recursively find all .md files in dir_path_content and generate HTML pages in dest_dir_path.
+    Preserves the folder structure.
+    """
+    # List everything in the current content directory
+    entries = os.listdir(dir_path_content)
+
+    for entry in entries:
+        content_path = os.path.join(dir_path_content, entry)
+        dest_path = os.path.join(dest_dir_path, entry)
+
+        if os.path.isfile(content_path):
+            # It's a file
+            if entry.endswith(".md"):
+                # Markdown file → generate HTML
+                # Replace .md with .html in destination
+                html_dest = dest_path[:-3] + ".html"  # remove .md, add .html
+                print(f"Generating page: {content_path} → {html_dest}")
+                generate_page(content_path, template_path, html_dest)
+            else:
+                print(f"Skipping non-markdown file: {content_path}")
+
+        elif os.path.isdir(content_path):
+            # It's a directory → create matching dir in public and recurse
+            print(f"Entering directory: {content_path}")
+            os.makedirs(dest_path, exist_ok=True)
+            generate_pages_recursive(content_path, template_path, dest_path)
+        
+def main():
+    print("Starting SSG build...")
+
+    # Copy static assets
+    copy_directory("static", "public")
+
+    # Generate ALL pages recursively from content/
+    generate_pages_recursive(
+        dir_path_content="content",
+        template_path="template.html",
+        dest_dir_path="public"
+    )
+
+    print("Build complete! Run the server next.")
 
 if __name__ == "__main__":
     main()
